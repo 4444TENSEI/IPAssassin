@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPAssassin</title>
+</head>
+
+<body>
+    <ul id="ip-list">
+    </ul>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const ipListElement = document.getElementById('ip-list');
+            const ipSet = new Set();
+            const ipData = { ipv4: [], ipv6: [] };
+            // WebRTC IPs
+            const getUserIPs = (callback) => {
+                const myPeerConnection = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+                myPeerConnection.createDataChannel("");
+                myPeerConnection.createOffer().then(offer => myPeerConnection.setLocalDescription(offer));
+                myPeerConnection.onicecandidate = function (event) {
+                    if (event.candidate) {
+                        const ip = event.candidate.candidate.split(' ')[4];
+                        callback(ip);
+                    }
+                };
+            };
+            getUserIPs((ip) => {
+                if (!ipSet.has(ip)) {
+                    const ipv4Regex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+                    const ipv6Regex = /^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|::(ffff(:0{1,4}){0,1}:){0,1}(([0-9a-fA-F]{1,4}:){1,4}|((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$/;
+                    if (ipv4Regex.test(ip)) {
+                        ipListElement.innerHTML += `<li>IPv4: ${ip}</li>`;
+                        ipData.ipv4.push(ip);
+                    } else if (ipv6Regex.test(ip)) {
+                        ipListElement.innerHTML += `<li>IPv6: ${ip}</li>`;
+                        ipData.ipv6.push(ip);
+                    }
+                    ipSet.add(ip);
+                }
+            });
+            // 延迟1秒后打印数据
+            setTimeout(() => {
+                console.log(ipData);
+            }, 1000);
+        });
+    </script>
+</body>
+
+</html>
